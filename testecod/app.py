@@ -25,7 +25,7 @@ if arquivo is not None:
     # Mostra prévia do conteúdo para debug
     conteudo_bruto = arquivo.read()
     st.text(conteudo_bruto[:1000].decode("ISO-8859-1", errors="ignore"))  # Mostra os primeiros 1000 caracteres
-    arquivo.seek(0)  # Volta o ponteiro para o início do arquivo
+    arquivo.seek(0)
 
     df = carregar_dados(arquivo)
 
@@ -35,16 +35,26 @@ if arquivo is not None:
             somas = fundos["PR_RENTAB_ANO"].sum().reset_index()
             somas = somas.sort_values(by="PR_RENTAB_ANO", ascending=False)
 
+            # Renomeia colunas para exibição e exportação
+            tabela_formatada = somas.rename(columns={
+                "CNPJ_FUNDO_CLASSE": "CNPJ",
+                "DENOM_SOCIAL": "Nome do Fundo",
+                "PR_RENTAB_ANO": "Rendimento Total (%)"
+            })
+
             st.subheader("🏆 Ranking de Fundos por Rendimento Total (últimos 4 anos)")
-            st.dataframe(
-                somas.rename(columns={
-                    "CNPJ_FUNDO_CLASSE": "CNPJ",
-                    "DENOM_SOCIAL": "Nome do Fundo",
-                    "PR_RENTAB_ANO": "Rendimento Total (%)"
-                }).style.format({"Rendimento Total (%)": "{:.2f}"}),
-                use_container_width=True
+            st.dataframe(tabela_formatada.style.format({"Rendimento Total (%)": "{:.2f}"}), use_container_width=True)
+
+            # Botão para download do ranking
+            csv_download = tabela_formatada.to_csv(index=False, sep=";", encoding="utf-8-sig")
+            st.download_button(
+                label="📥 Baixar Ranking em CSV",
+                data=csv_download,
+                file_name="ranking_fundos.csv",
+                mime="text/csv"
             )
 
+            # Detalhamento individual
             st.subheader("🔎 Detalhar Rendimento por Fundo")
             cnpjs = somas["CNPJ_FUNDO_CLASSE"].tolist()
             cnpj_escolhido = st.selectbox("Escolha um CNPJ para ver os detalhes:", cnpjs)
